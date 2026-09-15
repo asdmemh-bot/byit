@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "716793905434",
+    "project_id": "byit-d039e",
+    "storage_bucket": "byit-d039e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:716793905434:android:70fad38bdc0a6109586ca3",
+        "android_client_info": {
+          "package_name": "com.example.byit"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA4R4iHeVlq-4FHTyYBfYUxXbiLJJ5GPbM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
