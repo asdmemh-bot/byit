@@ -23,14 +23,16 @@ jobs:
       - name: Build iOS
         run: flutter build ios --release --no-codesign
 
-      - name: Zip iOS app
+      - name: Create IPA
         run: |
-          cd build/ios/iphoneos
-          zip -r ../../byit-ios.zip Runner.app
+          mkdir -p build/ipa/Payload
+          cp -R build/ios/iphoneos/Runner.app build/ipa/Payload/
+          cd build/ipa
+          zip -r ../../byit.ipa Payload
 
-      - name: Upload iOS build
+      - name: Upload IPA
         uses: actions/upload-artifact@v4
         with:
-          name: byit-ios
-          path: build/byit-ios.zip
+          name: byit-ipa
+          path: build/byit.ipa
           retention-days: 7
