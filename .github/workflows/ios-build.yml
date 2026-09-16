@@ -34,5 +34,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: byit-ipa
-          path: build/byit.ipa
+          path: byit.ipa
           retention-days: 7
