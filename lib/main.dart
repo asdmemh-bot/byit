@@ -2686,7 +2686,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-
   void showMessage(String title, String message) {
     showDialog(
       context: context,
@@ -3298,6 +3297,102 @@ class _HomeSettingsScreenState extends State<HomeSettingsScreen> {
     }
   }
 
+  Future<void> leaveCurrentHome() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      showMessage('تنبيه', 'يجب تسجيل الدخول أولاً.');
+      return;
+    }
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: AlertDialog(
+          title: const Text('مغادرة البيت'),
+          content: const Text(
+            'هل أنت متأكد أنك تريد مغادرة هذا البيت؟\n\n'
+            'سيتم فصل حسابك عن البيت، ويمكنك الانضمام إلى بيت آخر لاحقاً.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('إلغاء'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('مغادرة البيت'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    setState(() => saving = true);
+
+    try {
+      final email = user.email ?? '';
+      String phone = '';
+      if (email.endsWith('@byit.app')) {
+        phone = email.substring(0, email.length - '@byit.app'.length);
+      }
+
+      if (phone.isEmpty) {
+        throw Exception('تعذر تحديد حساب المستخدم.');
+      }
+
+      final userRef = FirebaseFirestore.instance
+          .collection('users')
+          .doc(phone);
+      final userSnap = await userRef.get();
+
+      if (!userSnap.exists) {
+        throw Exception('لم يتم العثور على بيانات الحساب.');
+      }
+
+      final data = userSnap.data() ?? {};
+      final savedHomeId = data['homeId']?.toString() ?? '';
+
+      if (savedHomeId.isEmpty || savedHomeId == 'null') {
+        throw Exception('أنت غير مرتبط ببيت حالياً.');
+      }
+
+      final homeRef = FirebaseFirestore.instance
+          .collection('homes')
+          .doc(savedHomeId);
+
+      await FirebaseFirestore.instance.runTransaction((transaction) async {
+        transaction.update(homeRef, {
+          'members': FieldValue.arrayRemove([user.uid]),
+        });
+
+        transaction.update(userRef, {
+          'homeId': null,
+          'leftHomeAt': FieldValue.serverTimestamp(),
+        });
+      });
+
+      if (!mounted) return;
+      setState(() => saving = false);
+
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const HomeScreen()),
+        (route) => false,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => saving = false);
+      showMessage('خطأ', 'تعذر مغادرة البيت.\n\n$e');
+    }
+  }
+
   void showMessage(String title, String message) {
     showDialog(
       context: context,
@@ -3434,6 +3529,25 @@ class _HomeSettingsScreenState extends State<HomeSettingsScreen> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF214C45),
                         foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  SizedBox(
+                    height: 56,
+                    child: OutlinedButton.icon(
+                      onPressed: leaveCurrentHome,
+                      icon: const Icon(Icons.exit_to_app_rounded),
+                      label: const Text('مغادرة البيت'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.red,
+                        side: const BorderSide(
+                          color: Colors.red,
+                          width: 1.5,
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(18),
                         ),
@@ -4263,7 +4377,7 @@ class _FamilyMembersScreenState extends State<FamilyMembersScreen> {
                                           children: [
                                             Icon(Icons.delete_outline_rounded),
                                             SizedBox(width: 10),
-                                            Text('حذف من البيت'),
+                                            Text('إخراج من البيت'),
                                           ],
                                         ),
                                       ),
